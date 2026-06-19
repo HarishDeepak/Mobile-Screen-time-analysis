@@ -1,52 +1,79 @@
-<h1 align="center" id="title">Mobile-Screen-time-analysis</h1>
+# Mobile Screen Time Analysis and Prediction
 
-<p id="description">This project analyzes screen time usage data from a mobile app. It explores relationships between app usage notifications times opened and day of the week. Additionally it builds a linear regression model to predict screen time usage based on these factors.</p>
+Exploratory analysis and linear regression model to predict daily screen time usage from behavioural signals — notifications received, number of app opens, and day of the week — with SHAP-based feature importance for interpretability.
 
-<h2>🛠️ Installation Steps:</h2>
+## Dataset
 
-<p>1. Clone this repository:</p>
+- **Source**: [Screentime App Details Dataset — Kaggle](https://www.kaggle.com/datasets/prasertk/screentime-app-details-dataset)
+- **Records**: 54 daily observations across 5 apps (Instagram, WhatsApp, etc.)
+- **Columns**: `Date`, `Usage` (minutes), `Notifications`, `Times opened`, `App`
+- **Target**: `Usage` (continuous, minutes/day)
 
-```
-git clone https://github.com//screen_time_usage_analysis.git
-```
+| Stat | Usage (min) | Notifications | Times Opened |
+|---|---|---|---|
+| Mean | 65.0 | 117.7 | 61.5 |
+| Std | 58.3 | 97.0 | 43.8 |
+| Min | 1 | 8 | 2 |
+| Max | 244 | 405 | 192 |
 
-<p>2. Install required libraries:</p>
-
-```
-pip install pandas numpy plotly.express plotly.graph_objects scikit-learn matplotlib shap
-```
-
-<p>3. Running the Script Navigate to the project directory:</p>
-
-```
-cd screen_time_usage_analysis
-```
-
-<p>4. Run the script:</p>
+## Pipeline
 
 ```
-python screentime_analysis.py
+Raw CSV
+  → Null check (no missing values)
+  → Feature engineering: Date → Day_of_week (0–6)
+  → Features: [Day_of_week, Notifications, Times_opened]
+  → Train/test split (80/20, random_state=42)
+  → Linear Regression (scikit-learn)
+  → Evaluation: MAE, cross-validation R², confusion matrix (binned usage categories)
+  → SHAP Kernel Explainer → feature importance + summary plot
 ```
 
-**Output**
-The script generates several visualizations and outputs to understand screen time usage patterns:
+## Model & Results
 
-**Descriptive statistics:** Summarizes the data (e.g., mean, standard deviation) for app usage, notifications, times opened, etc.
-Bar charts: Visualize the distribution of app usage across different factors:
-Date: Shows how usage varies by day.
-Notifications: Illustrates the relationship between notifications received and usage.
-Times opened: Depicts how usage changes based on how many times the app is opened.
-Scatter plot: Explores the correlation between the number of notifications and screen time usage.
-Evaluation metrics (MAE): Measures the absolute difference between actual and predicted usage for the linear regression model.
-Visualization: Compares actual screen time usage with the model's predictions.
-Confusion matrix: Shows how well the model classified usage categories (e.g., low, moderate, high).
-Feature importance analysis: Identifies which factors (day of week, notifications, times opened) have the most significant influence on predicting usage.
-Cross-validation scores and mean CV score: Evaluates the model's performance across different data splits.
-SHAP summary plot: Provides insights into how each feature contributes to individual predictions.
+**Model**: Linear Regression
 
-**Analysis and Conclusion**
-The project provides insights into factors affecting screen time usage and demonstrates a basic linear regression model for prediction. Further exploration could involve feature engineering, model selection, and hyperparameter tuning to improve model performance.
+**Cross-Validation (5-fold R² scores)**:
 
-**Additional Notes**
-This is a basic example using a linear regression model. More advanced models might be explored for better prediction accuracy.
-The code includes comments to explain each step.
+| Fold | R² Score |
+|---|---|
+| 1 | 0.44 |
+| 2 | 0.65 |
+| 3 | 0.82 |
+| 4 | 0.23 |
+| 5 | 0.53 |
+| **Mean** | **~0.54** |
+
+The moderate R² (~0.54) reflects the small dataset size (54 rows) and natural variability in app usage behaviour.
+
+## Visualisations
+
+- **Bar charts**: Usage by date, by notification count, by times opened (Plotly)
+- **Scatter plot with OLS trendline**: Notifications vs. Usage (Plotly)
+- **Actual vs. Predicted**: scatter comparison of model output vs. ground truth
+- **Confusion matrix**: usage binned into 4 categories (Low <50 / Moderate <100 / High <150 / Very High)
+- **Permutation feature importance**: bar chart of mean permutation importance per feature
+- **SHAP summary plot**: per-sample contribution of each feature to predicted usage (KernelExplainer)
+
+## Interpretation
+
+- **Notifications** and **Times opened** are the strongest predictors of screen time.
+- **Day of week** has lower but non-zero impact — weekend usage patterns differ from weekdays.
+- SHAP values confirm feature directionality: higher notification count → higher predicted usage.
+
+## Setup
+
+```bash
+pip install pandas numpy scikit-learn plotly matplotlib shap
+```
+
+Open `Mobile Screen time analysis.ipynb` in Jupyter or on Kaggle.
+
+Download the dataset:
+```bash
+kaggle datasets download -d prasertk/screentime-app-details-dataset
+```
+
+## Notes
+
+This is a small-scale analysis project. The primary value is in the SHAP-based interpretability pipeline and cross-validated regression evaluation, not the model's absolute performance — which is inherently limited by the 54-row dataset.
